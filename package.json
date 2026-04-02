@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "chrome-types": "^0.1.425",
+    "xlsx": "^0.18.5"
+  }
+}
