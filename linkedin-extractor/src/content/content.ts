@@ -6,14 +6,15 @@
 console.log('[LinkedIn Extractor] Content script loaded')
 
 // Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((request: any, _sender: any, sendResponse: any) => {
   if (request.action === 'extractProfile') {
     try {
       const profileData = extractProfileFromPage()
       sendResponse({ success: true, data: profileData })
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[LinkedIn Extractor] Extraction error:', error)
-      sendResponse({ success: false, error: error.message })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      sendResponse({ success: false, error: errorMessage })
     }
   }
 })
@@ -21,12 +22,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 /**
  * Utility: Get text content from DOM with fallback selectors
  */
-function getTextContent(selectors) {
+function getTextContent(selectors: string | string[]): string {
   if (typeof selectors === 'string') {
     selectors = [selectors]
   }
 
-  for (const selector of selectors) {
+  for (const selector of selectors as string[]) {
     try {
       const element = document.querySelector(selector)
       const text = element?.textContent?.trim()
@@ -43,11 +44,11 @@ function getTextContent(selectors) {
 /**
  * Utility: Get multiple text values from DOM
  */
-function getMultipleTexts(selector) {
+function getMultipleTexts(selector: string): string[] {
   try {
     return Array.from(document.querySelectorAll(selector))
-      .map((el) => el.textContent?.trim())
-      .filter((text) => text && text.length > 0)
+      .map((el): string | undefined => el.textContent?.trim())
+      .filter((text): text is string => text !== undefined && text.length > 0)
   } catch (e) {
     return []
   }
@@ -56,7 +57,7 @@ function getMultipleTexts(selector) {
 /**
  * Extract company from various selectors
  */
-function extractCompany() {
+function extractCompany(): string {
   // Try experience section first
   const expCompany = getTextContent('[data-test-id="experience-section"] li:first-child a')
   if (expCompany) return expCompany
@@ -65,14 +66,14 @@ function extractCompany() {
   const companyLinks = Array.from(document.querySelectorAll('a[href*="/company/"]'))
     .map((el) => el.textContent?.trim())
     .filter(Boolean)
-  return companyLinks[0] || ''
+  return (companyLinks[0] as string) || ''
 }
 
 /**
  * Extract skills from the page
  */
-function extractSkills() {
-  const skills = new Set()
+function extractSkills(): string[] {
+  const skills = new Set<string>()
 
   // Try multiple skill selectors
   const skillSelectors = [
@@ -95,8 +96,8 @@ function extractSkills() {
 /**
  * Extract experience section
  */
-function extractExperience() {
-  const experiences = []
+function extractExperience(): Array<{ title: string; company: string; duration: string }> {
+  const experiences: Array<{ title: string; company: string; duration: string }> = []
   const items = document.querySelectorAll('[data-test-id="experience-section"] li')
 
   items.forEach((item) => {
@@ -121,8 +122,8 @@ function extractExperience() {
 /**
  * Extract education section
  */
-function extractEducation() {
-  const educations = []
+function extractEducation(): Array<{ school: string; degree: string; field: string }> {
+  const educations: Array<{ school: string; degree: string; field: string }> = []
   const items = document.querySelectorAll('[data-test-id="education-section"] li')
 
   items.forEach((item) => {

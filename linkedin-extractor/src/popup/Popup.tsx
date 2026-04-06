@@ -4,6 +4,9 @@ import ProfilesList from './ProfilesList'
 import ExportButton from './ExportButton'
 import type { LinkedInProfile } from '../utils/parser'
 
+// Declare chrome for TypeScript
+declare const chrome: any
+
 interface StoredProfile extends LinkedInProfile {
   id: string
 }
@@ -21,7 +24,7 @@ export default function Popup() {
 
   // Load profiles from Chrome storage on mount
   useEffect(() => {
-    chrome.storage.local.get(['profiles'], (result) => {
+    chrome.storage.local.get(['profiles'], (result: any) => {
       if (result.profiles) {
         setProfiles(result.profiles)
       }
@@ -45,7 +48,7 @@ export default function Popup() {
     showMessage('Extracting profile...', 'info')
 
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      const [tab] = await chrome.tabs.query({ active: true, currentWindowx: true })
 
       if (!tab.id) {
         showMessage('Error: No active tab found', 'error')
