@@ -2,5 +2,8 @@
   "dependencies": {
     "chrome-types": "^0.1.425",
     "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.38"
   }
 }

@@ -1,4 +1,3 @@
-import { FC } from 'react'
 import './ProfilesList.css'
 import type { LinkedInProfile } from '../utils/parser'
 
@@ -11,7 +10,7 @@ interface ProfilesListProps {
   onRemove: (id: string) => void
 }
 
-export default function ProfilesList({ profiles, onRemove }: ProfilesListProps): JSX.Element {
+export default function ProfilesList({ profiles, onRemove }: ProfilesListProps) {
   const formatDate = (isoString: string) => {
     try {
       return new Date(isoString).toLocaleDateString('en-IN', {
