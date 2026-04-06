@@ -4,6 +4,8 @@ import ProfilesList from './ProfilesList'
 import ExportButton from './ExportButton'
 import type { LinkedInProfile } from '../utils/parser'
 
+const DELAY_MS = 2000 
+
 // Declare chrome for TypeScript
 declare const chrome: any
 
@@ -45,10 +47,15 @@ export default function Popup() {
 
   const extractCurrentProfile = async () => {
     setLoading(true)
-    showMessage('Extracting profile...', 'info')
+    showMessage('Waiting 2 seconds to avoid rate limiting...', 'info')
 
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindowx: true })
+      // Wait before extracting to avoid LinkedIn blocking
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      showMessage('Extracting profile...', 'info')
+
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
 
       if (!tab.id) {
         showMessage('Error: No active tab found', 'error')
