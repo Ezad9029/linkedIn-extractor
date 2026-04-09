@@ -159,9 +159,10 @@ export default function Popup() {
 
             <div className="export-footer">
               <ExportButton 
-                profiles={profiles}
-                onExport={() => showMessage('Exported to Excel', 'success')}
-              />
+  profiles={profiles}
+  onExport={() => showMessage('Exported to Excel', 'success')}
+  showMessage={showMessage}
+/>
               <button
                 className="advanced-btn"
                 onClick={() => setShowAdvanced(!showAdvanced)}

@@ -149,36 +149,25 @@ function extractEducation(): Array<{ school: string; degree: string; field: stri
  * Main extraction function
  */
 function extractProfileFromPage() {
-  // Basic info
   const name = getTextContent(['h1', '[data-test-id="top-card-title"]'])
-  const title = getTextContent([
-    '[data-test-id="top-card-headline"] span',
-    '[class*="headline"]',
-  ])
-  const location = getTextContent(['[data-test-id="top-card-subline-one"]'])
-  const company = extractCompany()
-
-  // Bio/About
-  const bio = getTextContent([
-    '[data-test-id="about"]',
-    '[class*="about"]',
-    'section.show-more-less-html__markup',
-  ])
-
-  // Collections
-  const skills = extractSkills()
+  
+  // Get experience - first entry is current company
   const experience = extractExperience()
-  const education = extractEducation()
+  
+  // Current company (first in experience list)
+  const company = experience.length > 0 ? experience[0].company : ''
+  
+  // Current title (first in experience list)
+  const title = experience.length > 0 ? experience[0].title : ''
+  
+  // Time in current organisation (first in experience list)
+  const timeInCompany = experience.length > 0 ? experience[0].duration : ''
 
   return {
     name,
-    title,
     company,
-    location,
-    bio,
-    skills,
-    experience,
-    education,
+    title,
+    timeInCompany,
     extractedAt: new Date().toISOString(),
   }
 }

@@ -5,27 +5,12 @@
 
 export interface LinkedInProfile {
   name: string
-  title: string
   company: string
-  location: string
-  bio: string
-  skills: string[]
-  experience: Experience[]
-  education: Education[]
+  title: string
+  timeInCompany: string
   extractedAt: string
 }
 
-export interface Experience {
-  title: string
-  company: string
-  duration: string
-}
-
-export interface Education {
-  school: string
-  degree: string
-  field: string
-}
 
 /**
  * Get text content from DOM with fallback selectors
@@ -60,90 +45,33 @@ export const extractProfileData = (): LinkedInProfile => {
     '[class*="profile-title"]',
   ])
 
-  const title = getTextContent([
-    '[data-test-id="top-card-headline"] span',
-    '[class*="headline"]',
-    '.text-body-medium',
-  ])
-
-  const location = getTextContent([
-    '[data-test-id="top-card-subline-one"]',
-    '[class*="location"]',
-  ])
-
-  // Extract bio/about section
-  const bio = getTextContent([
-    '[data-test-id="about"]',
-    '[class*="about"]',
-    'section.show-more-less-html__markup',
-  ])
-
-  // Extract company from experience or top card
-  const company = extractCompany()
-
-  // Extract skills
-  const skills = extractSkills()
-
-  // Extract experience
+  // Extract experience - first entry is current company
   const experience = extractExperience()
 
-  // Extract education
-  const education = extractEducation()
+  // Current company (first in experience list)
+  const company = experience.length > 0 ? experience[0].company : ''
+
+  // Current title (first in experience list)
+  const title = experience.length > 0 ? experience[0].title : ''
+
+  // Time in current organisation (first in experience list)
+  const timeInCompany = experience.length > 0 ? experience[0].duration : ''
 
   return {
     name,
-    title,
     company,
-    location,
-    bio,
-    skills,
-    experience,
-    education,
+    title,
+    timeInCompany,
     extractedAt: new Date().toISOString(),
   }
 }
 
-/**
- * Extract company from various LinkedIn selectors
- */
-const extractCompany = (): string => {
-  // Try to get from experience section first
-  const experienceTitle = getTextContent(['[data-test-id="experience-section"] li:first-child a'])
-  if (experienceTitle) {
-    return experienceTitle
-  }
 
-  // Try from company links
-  const companyLink = Array.from(document.querySelectorAll('a[href*="/company/"]'))
-    .map((el) => el.textContent?.trim())
-    .filter(Boolean)[0]
 
-  return companyLink || ''
-}
-
-/**
- * Extract all skills from the page
- */
-const extractSkills = (): string[] => {
-  const skills = new Set<string>()
-
-  // Try multiple selectors for skills
-  const skillSelectors = [
-    '[data-test-id*="skill"]',
-    '[class*="skill"]',
-    '.pvs-list__outer-container [data-test-id*="endorsement"]',
-  ]
-
-  for (const selector of skillSelectors) {
-    getMultipleTexts(selector).forEach((skill) => {
-      if (skill.length > 0 && skill.length < 50) {
-        // Filter out very long texts (likely not skills)
-        skills.add(skill)
-      }
-    })
-  }
-
-  return Array.from(skills).slice(0, 20) // Limit to top 20 skills
+interface Experience {
+  title: string
+  company: string
+  duration: string
 }
 
 /**
@@ -173,32 +101,6 @@ const extractExperience = (): Experience[] => {
   return experiences.slice(0, 5) // Limit to 5 most recent
 }
 
-/**
- * Extract education from education section
- */
-const extractEducation = (): Education[] => {
-  const educations: Education[] = []
-
-  const educationItems = document.querySelectorAll('[data-test-id="education-section"] li')
-
-  educationItems.forEach((item) => {
-    const schoolEl = item.querySelector('[data-test-id*="school"]')
-    const degreeEl = item.querySelector('[data-test-id*="degree"]')
-    const fieldEl = item.querySelector('[data-test-id*="field"]')
-
-    const education: Education = {
-      school: schoolEl?.textContent?.trim() || '',
-      degree: degreeEl?.textContent?.trim() || '',
-      field: fieldEl?.textContent?.trim() || '',
-    }
-
-    if (education.school) {
-      educations.push(education)
-    }
-  })
-
-  return educations.slice(0, 3) // Limit to 3 most recent
-}
 
 /**
  * Validate extracted profile has minimum required fields

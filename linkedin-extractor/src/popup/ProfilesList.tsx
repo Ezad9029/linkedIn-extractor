@@ -35,7 +35,6 @@ export default function ProfilesList({ profiles, onRemove }: ProfilesListProps) 
           <div className="profile-header">
             <div className="profile-title">
               <h3>{profile.name || '(No name)'}</h3>
-              {profile.title && <p className="profile-position">📍 {profile.title}</p>}
             </div>
             <button
               className="remove-btn"
@@ -54,60 +53,17 @@ export default function ProfilesList({ profiles, onRemove }: ProfilesListProps) 
               </div>
             )}
 
-            {profile.location && (
+            {profile.title && (
               <div className="detail-row">
-                <span className="detail-label">📌</span>
-                <span>{profile.location}</span>
+                <span className="detail-label">📍</span>
+                <span>{profile.title}</span>
               </div>
             )}
 
-            {profile.skills.length > 0 && (
-              <div className="detail-section">
-                <p className="detail-label">💡 Top Skills:</p>
-                <div className="skills-list">
-                  {profile.skills.slice(0, 6).map((skill, idx) => (
-                    <span key={idx} className="skill-tag">
-                      {skill}
-                    </span>
-                  ))}
-                  {profile.skills.length > 6 && (
-                    <span className="skill-tag more">+{profile.skills.length - 6}</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {profile.experience.length > 0 && (
-              <div className="detail-section">
-                <p className="detail-label">💼 Experience ({profile.experience.length}):</p>
-                <div className="exp-list">
-                  {profile.experience.slice(0, 2).map((exp, idx) => (
-                    <div key={idx} className="exp-item">
-                      <strong>{exp.title}</strong> at {exp.company}
-                      {exp.duration && <span className="duration">{exp.duration}</span>}
-                    </div>
-                  ))}
-                  {profile.experience.length > 2 && (
-                    <p className="more-text">+{profile.experience.length - 2} more</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {profile.education.length > 0 && (
-              <div className="detail-section">
-                <p className="detail-label">🎓 Education ({profile.education.length}):</p>
-                <div className="edu-list">
-                  {profile.education.slice(0, 2).map((edu, idx) => (
-                    <div key={idx} className="edu-item">
-                      <strong>{edu.school}</strong>
-                      {edu.degree && <span>{edu.degree}</span>}
-                    </div>
-                  ))}
-                  {profile.education.length > 2 && (
-                    <p className="more-text">+{profile.education.length - 2} more</p>
-                  )}
-                </div>
+            {profile.timeInCompany && (
+              <div className="detail-row">
+                <span className="detail-label">⏱️</span>
+                <span>{profile.timeInCompany}</span>
               </div>
             )}
           </div>
