@@ -10,7 +10,7 @@ interface ExportButtonProps {
   showMessage: (text: string, type: 'success' | 'error' | 'info') => void
 }
 
-export default function ExportButton({ profiles, onExport, showMessage }: ExportButtonProps) { {
+export default function ExportButton({ profiles, onExport, showMessage }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
 
@@ -24,40 +24,14 @@ export default function ExportButton({ profiles, onExport, showMessage }: Export
     }
   }
 
-  const exportBasicExcel = async () => {
+const exportBasicExcel = async () => {
     setExporting(true)
     try {
-      console.log('Starting Excel export...')
-      console.log('Profiles to export:', profiles.length)
-      
-      const data = profiles.map((profile) => ({
-        Name: profile.name,
-        Company: profile.company,
-        Title: profile.title,
-        'Time in Company': profile.timeInCompany,
-      }))
-      
-      console.log('Data prepared:', data)
-      
-      const ws = XLSX.utils.json_to_sheet(data)
-      console.log('Sheet created')
-      
-      const wb = XLSX.utils.book_new()
-      console.log('Workbook created')
-      
-      XLSX.utils.book_append_sheet(wb, ws, 'Profiles')
-      console.log('Sheet appended')
-      
       const filename = `LinkedIn_Profiles_${new Date().toISOString().slice(0, 10)}.xlsx`
-      console.log('About to write file:', filename)
-      
-      XLSX.writeFile(wb, filename)
-      console.log('File written successfully')
-      
+      exportProfilesToExcel(profiles, filename)
       onExport?.()
-      showMessage('✓ Exported to Excel successfully', 'success')
+      showMessage('Exported to Excel successfully', 'success')
     } catch (error) {
-      console.error('Export error details:', error)
       const errorMsg = error instanceof Error ? error.message : String(error)
       showMessage(`Export failed: ${errorMsg}`, 'error')
     } finally {
@@ -71,9 +45,10 @@ export default function ExportButton({ profiles, onExport, showMessage }: Export
     try {
       exportProfilesToCSV(profiles)
       onExport?.()
+      showMessage('Exported to CSV successfully', 'success')
     } catch (error) {
-      console.error('Export error:', error)
-      alert('Failed to export to CSV')
+      const errorMsg = error instanceof Error ? error.message : String(error)
+      showMessage(`Export failed: ${errorMsg}`, 'error')
     } finally {
       setExporting(false)
       setShowMenu(false)
@@ -111,5 +86,4 @@ export default function ExportButton({ profiles, onExport, showMessage }: Export
       )}
     </div>
   )
-}
 }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Profile Extractor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Extract LinkedIn profile data and export to Excel/CSV",
   "permissions": [
     "scripting",
@@ -20,15 +20,10 @@
   "content_scripts": [
     {
       "matches": [
-        "https://linkedin.com/*",
         "https://www.linkedin.com/*"
       ],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "run_at": "document_start"
     }
-  ],
-  "icons": {
-    "16": "favicon.svg",
-    "48": "favicon.svg",
-    "128": "favicon.svg"
-  }
+  ]
 }
