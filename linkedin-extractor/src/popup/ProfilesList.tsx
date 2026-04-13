@@ -46,26 +46,20 @@ export default function ProfilesList({ profiles, onRemove }: ProfilesListProps) 
           </div>
 
           <div className="profile-details">
-            {profile.company && (
-              <div className="detail-row">
-                <span className="detail-label">🏢</span>
-                <span>{profile.company}</span>
-              </div>
-            )}
+            <div className="detail-row">
+              <span className="detail-label">🏢</span>
+              <span>{profile.company}</span>
+            </div>
 
-            {profile.title && (
-              <div className="detail-row">
-                <span className="detail-label">📍</span>
-                <span>{profile.title}</span>
-              </div>
-            )}
+            <div className="detail-row">
+              <span className="detail-label">📍</span>
+              <span>{profile.title}</span>
+            </div>
 
-            {profile.timeInCompany && (
-              <div className="detail-row">
-                <span className="detail-label">⏱️</span>
-                <span>{profile.timeInCompany}</span>
-              </div>
-            )}
+            <div className="detail-row">
+              <span className="detail-label">⏱️</span>
+              <span>{profile.timeInCompany}</span>
+            </div>
           </div>
 
           <p className="profile-timestamp">

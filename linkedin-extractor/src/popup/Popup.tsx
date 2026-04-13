@@ -159,35 +159,51 @@ export default function Popup() {
 }
 
 function extractLinkedInData() {
-  // Extract name from various possible selectors
-  const nameEl = 
-    document.querySelector('h1') ||
-    document.querySelector('[data-test-id="top-card-title"]') ||
-    document.querySelector('.profile-card h1')
-  const name = nameEl?.textContent?.trim() || 'Unknown'
+  let name = ''
+  let title = ''
+  let company = ''
+  let timeInCompany = ''
 
-  // Extract experience section
-  const experienceItems = document.querySelectorAll('[data-test-id="experience-section"] li')
-  let company = 'Unknown'
-  let title = 'Unknown'
-  let timeInCompany = 'Unknown'
+  // Extract name - get first h1
+  const h1 = document.querySelector('h1')
+  if (h1?.textContent) {
+    name = h1.textContent.trim()
+  }
 
-  if (experienceItems.length > 0) {
-    const firstExp = experienceItems[0]
-    const titleEl = firstExp.querySelector('[data-test-id*="title"]')
-    const companyEl = firstExp.querySelector('[data-test-id*="company"]')
-    const durationEl = firstExp.querySelector('[data-test-id*="duration"]')
+  // Extract job details from the entire page text
+  // Look for any section that contains experience data
+  const pageText = document.body.innerText
+  const lines = pageText.split('\n').map(line => line.trim()).filter(line => line.length > 0)
 
-    title = titleEl?.textContent?.trim() || 'Unknown'
-    company = companyEl?.textContent?.trim() || 'Unknown'
-    timeInCompany = durationEl?.textContent?.trim() || 'Unknown'
+  // Find lines that might be job title, company, or duration
+  // Usually they appear in sequence in the experience section
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    
+    // Look for "Experience" keyword
+    if (line.includes('Experience') || line === 'Experience') {
+      // Next few lines should have job info
+      if (i + 1 < lines.length && !title) {
+        title = lines[i + 1]
+      }
+      if (i + 2 < lines.length && !company) {
+        company = lines[i + 2]
+      }
+      if (i + 3 < lines.length && !timeInCompany) {
+        timeInCompany = lines[i + 3]
+      }
+      
+      if (title && company && timeInCompany) {
+        break
+      }
+    }
   }
 
   return {
-    name,
-    company,
-    title,
-    timeInCompany,
+    name: name || 'Unknown',
+    company: company || 'Unknown',
+    title: title || 'Unknown',
+    timeInCompany: timeInCompany || 'Unknown',
     extractedAt: new Date().toISOString(),
   }
 }

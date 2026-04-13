@@ -2,7 +2,6 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 import './ExportButton.css'
 import type { LinkedInProfile } from '../utils/parser'
-import { exportProfilesToExcel, exportProfilesToCSV } from '../utils/excelExporter'
 
 interface ExportButtonProps {
   profiles: (LinkedInProfile & { id: string })[]
@@ -24,16 +23,26 @@ export default function ExportButton({ profiles, onExport, showMessage }: Export
     }
   }
 
-const exportBasicExcel = async () => {
+  const exportBasicExcel = async () => {
     setExporting(true)
     try {
+      const data = profiles.map(formatProfileForExcel)
+      const ws = XLSX.utils.json_to_sheet(data)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Profiles')
+
+      // Set column widths
+      ws['!cols'] = [20, 20, 20, 20, 20].map((w) => ({
+        wch: w,
+      }))
+
       const filename = `LinkedIn_Profiles_${new Date().toISOString().slice(0, 10)}.xlsx`
-      exportProfilesToExcel(profiles, filename)
+      XLSX.writeFile(wb, filename)
+
       onExport?.()
-      showMessage('Exported to Excel successfully', 'success')
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error)
-      showMessage(`Export failed: ${errorMsg}`, 'error')
+      console.error('Export error:', error)
+      alert('Failed to export to Excel')
     } finally {
       setExporting(false)
       setShowMenu(false)
@@ -43,12 +52,24 @@ const exportBasicExcel = async () => {
   const exportCSV = async () => {
     setExporting(true)
     try {
-      exportProfilesToCSV(profiles)
+      const data = profiles.map(formatProfileForExcel)
+      const ws = XLSX.utils.json_to_sheet(data)
+      const csv = XLSX.utils.sheet_to_csv(ws)
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `LinkedIn_Profiles_${new Date().toISOString().slice(0, 10)}.csv`)
+      link.style.visibility = 'hidden'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
       onExport?.()
-      showMessage('Exported to CSV successfully', 'success')
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error)
-      showMessage(`Export failed: ${errorMsg}`, 'error')
+      console.error('Export error:', error)
+      alert('Failed to export to CSV')
     } finally {
       setExporting(false)
       setShowMenu(false)
