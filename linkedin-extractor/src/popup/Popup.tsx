@@ -171,29 +171,47 @@ function extractLinkedInData() {
   }
 
   // Extract job details from the entire page text
-  // Look for any section that contains experience data
   const pageText = document.body.innerText
   const lines = pageText.split('\n').map(line => line.trim()).filter(line => line.length > 0)
 
-  // Find lines that might be job title, company, or duration
-  // Usually they appear in sequence in the experience section
+  // Find the Experience section and get the first job entry
+  let foundExperience = false
+  let jobStartIndex = -1
+  
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    
-    // Look for "Experience" keyword
-    if (line.includes('Experience') || line === 'Experience') {
-      // Next few lines should have job info
-      if (i + 1 < lines.length && !title) {
-        title = lines[i + 1]
-      }
-      if (i + 2 < lines.length && !company) {
-        company = lines[i + 2]
-      }
-      if (i + 3 < lines.length && !timeInCompany) {
-        timeInCompany = lines[i + 3]
+    if (lines[i] === 'Experience') {
+      foundExperience = true
+      jobStartIndex = i + 1
+      break
+    }
+  }
+
+  // If we found experience section, get the next non-empty lines as job info
+  if (foundExperience && jobStartIndex >= 0) {
+    let jobLinesCount = 0
+    for (let i = jobStartIndex; i < lines.length; i++) {
+      const line = lines[i]
+      
+      // Skip empty lines and known section headers
+      if (line.length === 0 || line === 'Education' || line === 'Skills') {
+        break
       }
       
-      if (title && company && timeInCompany) {
+      // Skip logo/image text and other unwanted lines
+      if (line.includes('Logo') || line.length > 200) {
+        continue
+      }
+      
+      if (jobLinesCount === 0) {
+        title = line
+        jobLinesCount++
+      } else if (jobLinesCount === 1) {
+        // Company line - extract just the company name (before · or any special char)
+        company = line.split('·')[0].trim()
+        jobLinesCount++
+      } else if (jobLinesCount === 2) {
+        // Duration line
+        timeInCompany = line
         break
       }
     }
