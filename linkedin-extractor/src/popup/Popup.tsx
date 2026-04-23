@@ -159,69 +159,44 @@ export default function Popup() {
 }
 
 function extractLinkedInData() {
-  let name = ''
-  let title = ''
-  let company = ''
-  let timeInCompany = ''
+  let name = 'Username'
+  let title = 'Company Title'
+  let company = 'Company Name'
+  let timeInCompany = 'Time in Company'
 
-  // Extract name - get first h1
-  const h1 = document.querySelector('h1')
-  if (h1?.textContent) {
-    name = h1.textContent.trim()
+  // Extract name from h1
+  const nameEl = document.querySelector('h1')
+  if (nameEl) {
+    name = nameEl.textContent?.trim() || 'Unknown'
   }
 
-  // Extract job details from the entire page text
-  const pageText = document.body.innerText
-  const lines = pageText.split('\n').map(line => line.trim()).filter(line => line.length > 0)
-
-  // Find the Experience section and get the first job entry
-  let foundExperience = false
-  let jobStartIndex = -1
-  
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i] === 'Experience') {
-      foundExperience = true
-      jobStartIndex = i + 1
-      break
-    }
-  }
-
-  // If we found experience section, get the next non-empty lines as job info
-  if (foundExperience && jobStartIndex >= 0) {
-    let jobLinesCount = 0
-    for (let i = jobStartIndex; i < lines.length; i++) {
-      const line = lines[i]
+  // Extract from first job in experience
+  const expSection = document.querySelector('[data-test-id="experience-section"]')
+  if (expSection) {
+    const firstLi = expSection.querySelector('li')
+    if (firstLi) {
+      // Get all text content from the first job entry
+      const jobText = firstLi.innerText || firstLi.textContent || ''
+      const lines = jobText.split('\n').filter(line => line.trim().length > 0)
       
-      // Skip empty lines and known section headers
-      if (line.length === 0 || line === 'Education' || line === 'Skills') {
-        break
+      // Usually: Line 0 = title, Line 1 = company, Line 2 = duration
+      if (lines.length > 0) {
+        title = lines[0].trim()
       }
-      
-      // Skip logo/image text and other unwanted lines
-      if (line.includes('Logo') || line.length > 200) {
-        continue
+      if (lines.length > 1) {
+        company = lines[1].trim()
       }
-      
-      if (jobLinesCount === 0) {
-        title = line
-        jobLinesCount++
-      } else if (jobLinesCount === 1) {
-        // Company line - extract just the company name (before · or any special char)
-        company = line.split('·')[0].trim()
-        jobLinesCount++
-      } else if (jobLinesCount === 2) {
-        // Duration line
-        timeInCompany = line
-        break
+      if (lines.length > 2) {
+        timeInCompany = lines[2].trim()
       }
     }
   }
 
   return {
-    name: name || 'Unknown',
-    company: company || 'Unknown',
-    title: title || 'Unknown',
-    timeInCompany: timeInCompany || 'Unknown',
+    name,
+    company,
+    title,
+    timeInCompany,
     extractedAt: new Date().toISOString(),
   }
 }
