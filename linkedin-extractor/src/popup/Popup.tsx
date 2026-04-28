@@ -17,9 +17,9 @@ interface MessageState {
 
 export default function Popup() {
   const [profiles, setProfiles] = useState<StoredProfile[]>([])
-  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<MessageState | null>(null)
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [urlInput, setUrlInput] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     chrome.storage.local.get(['profiles'], (result: any) => {
@@ -40,29 +40,33 @@ export default function Popup() {
     setMessage({ type, text })
   }
 
-  const extractCurrentProfile = async () => {
+  const extractFromURL = async () => {
+    if (!urlInput.trim()) {
+      showMessage('Please enter a LinkedIn profile URL', 'error')
+      return
+    }
+
     setLoading(true)
-    showMessage('Extracting...', 'info')
+    showMessage('Fetching profile...', 'info')
 
     try {
+      // Open the LinkedIn profile in a new tab and extract data
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+      
+      // Create a new tab with the URL
+      const newTab = await chrome.tabs.create({ url: urlInput, active: false })
+      
+      // Wait for tab to load
+      await new Promise(resolve => setTimeout(resolve, 3000))
 
-      if (!tab.id) {
-        showMessage('No active tab', 'error')
-        setLoading(false)
-        return
-      }
-
-      if (!tab.url?.includes('linkedin.com')) {
-        showMessage('Go to LinkedIn profile page', 'error')
-        setLoading(false)
-        return
-      }
-
+      // Execute script to extract data
       const result = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        function: extractLinkedInData,
+        target: { tabId: newTab.id },
+        function: extractProfileData,
       })
+
+      // Close the tab
+      chrome.tabs.remove(newTab.id)
 
       if (result?.[0]?.result) {
         const profileData = result[0].result as LinkedInProfile
@@ -72,12 +76,20 @@ export default function Popup() {
           id: `profile_${Date.now()}`,
         }
 
+        if (!newProfile.name || newProfile.name === 'Unknown') {
+          showMessage('Could not extract profile data. Check URL and try again.', 'error')
+          setLoading(false)
+          return
+        }
+
         const updatedProfiles = [...profiles, newProfile]
         setProfiles(updatedProfiles)
         chrome.storage.local.set({ profiles: updatedProfiles })
-        showMessage(`✓ ${newProfile.name}`, 'success')
+        
+        setUrlInput('')
+        showMessage(`✓ ${newProfile.name} added`, 'success')
       } else {
-        showMessage('Extraction failed', 'error')
+        showMessage('Failed to extract profile', 'error')
       }
     } catch (error) {
       showMessage(`Error: ${error}`, 'error')
@@ -98,25 +110,35 @@ export default function Popup() {
     if (window.confirm(`Clear all ${profiles.length} profiles?`)) {
       setProfiles([])
       chrome.storage.local.set({ profiles: [] })
-      showMessage('Cleared', 'info')
+      showMessage('All cleared', 'info')
     }
   }
 
   return (
     <div className="popup-container">
       <header className="popup-header">
-        <h1>🔗 LinkedIn Extractor</h1>
+        <h1>🔗 LinkedIn Profiles</h1>
         <p>{profiles.length} profiles</p>
       </header>
 
       <main className="popup-main">
-        <button
-          className="extract-btn"
-          onClick={extractCurrentProfile}
-          disabled={loading}
-        >
-          {loading ? '⏳' : '📄'} Extract Profile
-        </button>
+        <div className="url-input-container">
+          <input
+            type="text"
+            placeholder="Paste LinkedIn profile URL..."
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            className="url-input"
+            disabled={loading}
+          />
+          <button
+            className="extract-btn"
+            onClick={extractFromURL}
+            disabled={loading}
+          >
+            {loading ? '⏳ Loading...' : '➕ Add'}
+          </button>
+        </div>
 
         {message && (
           <div className={`message message-${message.type}`}>
@@ -135,22 +157,16 @@ export default function Popup() {
               />
               <button
                 className="advanced-btn"
-                onClick={() => setShowAdvanced(!showAdvanced)}
+                onClick={clearAll}
               >
-                {showAdvanced ? '▼' : '▶'} Options
+                🗑️ Clear All
               </button>
             </div>
-            {showAdvanced && (
-              <div className="advanced-options">
-                <button className="option-btn clear-btn" onClick={clearAll}>
-                  🗑️ Clear All ({profiles.length})
-                </button>
-              </div>
-            )}
           </>
         ) : (
           <div className="empty-state">
             <p>No profiles yet</p>
+            <p>Paste a LinkedIn profile URL above</p>
           </div>
         )}
       </main>
@@ -158,44 +174,99 @@ export default function Popup() {
   )
 }
 
-function extractLinkedInData() {
-  let name = 'Username'
-  let title = 'Company Title'
-  let company = 'Company Name'
-  let timeInCompany = 'Time in Company'
+function waitForExperienceSection(timeout = 7000) {
+  return new Promise<Element | null>((resolve) => {
+    const findSection = () => {
+      const sections = document.querySelectorAll('section')
+      for (const section of sections) {
+        const heading = section.querySelector('h2')
+        if (heading && heading.innerText.toLowerCase().includes('experience')) {
+          return section
+        }
+      }
+      return null
+    }
 
-  // Extract name from h1
+    const existing = findSection()
+    if (existing) return resolve(existing)
+
+    const observer = new MutationObserver(() => {
+      const section = findSection()
+      if (section) {
+        observer.disconnect()
+        resolve(section)
+      }
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    })
+
+    setTimeout(() => {
+      observer.disconnect()
+      resolve(null)
+    }, timeout)
+  })
+}
+
+async function extractProfileData() {
+  let name = 'Unknown'
+  let title = 'Unknown'
+  let company = 'Unknown'
+  let timeInCompany = 'Unknown'
+
+  // ✅ Name (this part was already fine)
   const nameEl = document.querySelector('h1')
   if (nameEl) {
     name = nameEl.textContent?.trim() || 'Unknown'
   }
 
-  // Extract from first job in experience
-  const expSection = document.querySelector('[data-test-id="experience-section"]')
-  if (expSection) {
-    const firstLi = expSection.querySelector('li')
-    if (firstLi) {
-      // Get all text content from the first job entry
-      const jobText = firstLi.innerText || firstLi.textContent || ''
-      const lines = jobText.split('\n').filter(line => line.trim().length > 0)
-      
-      // Usually: Line 0 = title, Line 1 = company, Line 2 = duration
+  // ✅ Wait for experience section (IMPORTANT)
+  const experienceSection = await waitForExperienceSection()
+
+  if (experienceSection) {
+    const firstItem = experienceSection.querySelector('li')
+
+    if (firstItem) {
+      const text = firstItem.innerText
+
+      const lines = text
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+
+      // 🔍 Debug (you should keep this while developing)
+      console.log('Experience lines:', lines)
+
+      /*
+        Typical LinkedIn structure:
+        [
+          "Software Engineer",
+          "Google · Full-time",
+          "Jan 2022 - Present · 2 yrs"
+        ]
+      */
+
       if (lines.length > 0) {
-        title = lines[0].trim()
+        title = lines[0]
       }
+
       if (lines.length > 1) {
-        company = lines[1].trim()
+        // Extract company before "·"
+        company = lines[1].split('·')[0].trim()
       }
+
       if (lines.length > 2) {
-        timeInCompany = lines[2].trim()
+        timeInCompany = lines[2]
       }
     }
   }
 
   return {
     name,
-    company,
     title,
+    company,
     timeInCompany,
     extractedAt: new Date().toISOString(),
   }
