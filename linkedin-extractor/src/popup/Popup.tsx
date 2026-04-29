@@ -210,63 +210,99 @@ function waitForExperienceSection(timeout = 7000) {
   })
 }
 
-async function extractProfileData() {
+function extractProfileData() {
   let name = 'Unknown'
   let title = 'Unknown'
   let company = 'Unknown'
   let timeInCompany = 'Unknown'
 
-  // ✅ Name (this part was already fine)
-  const nameEl = document.querySelector('h1')
+  // Try to get structured data from meta tags and JSON-LD
+  console.log('=== Extracting from structured data ===')
+
+  // Method 1: Extract from meta tags
+  const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content') || ''
+  const ogDescription = document.querySelector('meta[name="description"]')?.getAttribute('content') || ''
+  
+  console.log('og:title:', ogTitle)
+  console.log('description:', ogDescription)
+
+  // Extract name from h1
+  const nameEl = document.querySelector('h1') as HTMLElement
   if (nameEl) {
     name = nameEl.textContent?.trim() || 'Unknown'
   }
 
-  // ✅ Wait for experience section (IMPORTANT)
-  const experienceSection = await waitForExperienceSection()
-
-  if (experienceSection) {
-    const firstItem = experienceSection.querySelector('li')
-
-    if (firstItem) {
-      const text = firstItem.innerText
-
-      const lines = text
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean)
-
-      // 🔍 Debug (you should keep this while developing)
-      console.log('Experience lines:', lines)
-
-      /*
-        Typical LinkedIn structure:
-        [
-          "Software Engineer",
-          "Google · Full-time",
-          "Jan 2022 - Present · 2 yrs"
-        ]
-      */
-
-      if (lines.length > 0) {
-        title = lines[0]
-      }
-
-      if (lines.length > 1) {
-        // Extract company before "·"
-        company = lines[1].split('·')[0].trim()
-      }
-
-      if (lines.length > 2) {
-        timeInCompany = lines[2]
+  // Method 2: Look for all text content with specific patterns
+  const allText = document.body.innerText
+  
+  // Look for employment patterns like "Title at Company"
+  const employmentPattern = /^(.+?)\s+at\s+(.+?)$/m
+  const lines = allText.split('\n')
+  
+  console.log('=== Looking for employment patterns ===')
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    
+    // Look for "Title at Company" pattern
+    if (line.includes(' at ') && !line.includes('linkedin.com')) {
+      const match = line.match(/^(.+?)\s+at\s+(.+?)$/)
+      if (match && title === 'Unknown') {
+        title = match[1].trim()
+        company = match[2].trim()
+        console.log('Found employment pattern:', { title, company })
+        break
       }
     }
   }
 
+  // Method 3: If still not found, look for experience section differently
+  if (title === 'Unknown') {
+    console.log('=== Trying alternative experience extraction ===')
+    
+    // Look for any element with "experience" text
+    const allElements = document.querySelectorAll('*')
+    let foundExperience = false
+    
+    for (let el of allElements) {
+      if (el.textContent?.includes('Experience') && el.textContent.length < 500) {
+        console.log('Found element with Experience:', el.textContent?.substring(0, 200))
+        
+        // Get text nodes after this element
+        const parent = el.parentElement
+        if (parent) {
+          const text = parent.innerText
+          const experienceLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+          
+          let expIndex = experienceLines.findIndex(l => l.toLowerCase().includes('experience'))
+          
+          if (expIndex !== -1) {
+            // Try to extract from next few lines
+            if (expIndex + 1 < experienceLines.length) {
+              title = experienceLines[expIndex + 1]
+            }
+            if (expIndex + 2 < experienceLines.length) {
+              company = experienceLines[expIndex + 2]
+            }
+            if (expIndex + 3 < experienceLines.length) {
+              timeInCompany = experienceLines[expIndex + 3]
+            }
+            
+            console.log('Extracted from experience element:', { title, company, timeInCompany })
+            break
+          }
+        }
+      }
+    }
+  }
+
+  console.log('=== Final Result ===')
+  console.log({ name, title, company, timeInCompany })
+
   return {
     name,
-    title,
     company,
+    title,
     timeInCompany,
     extractedAt: new Date().toISOString(),
   }
