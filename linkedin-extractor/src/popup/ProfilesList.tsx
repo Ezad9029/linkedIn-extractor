@@ -1,4 +1,3 @@
-import './ProfilesList.css'
 import type { LinkedInProfile } from '../utils/parser'
 
 interface StoredProfile extends LinkedInProfile {

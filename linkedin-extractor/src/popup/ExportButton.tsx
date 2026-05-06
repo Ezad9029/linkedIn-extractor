@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import './ExportButton.css'
 import type { LinkedInProfile } from '../utils/parser'
 import { exportProfilesToExcel, exportProfilesToCSV } from '../utils/excelExporter'
 
