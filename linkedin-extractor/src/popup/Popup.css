@@ -476,7 +476,7 @@ body {
   color: #0a66c2;
 }
 
-.profile-remove-btn {
+.remove-btn {
   background: none;
   border: none;
   color: #999;
@@ -486,7 +486,7 @@ body {
   line-height: 1;
 }
 
-.profile-remove-btn:hover {
+.remove-btn:hover {
   color: #d32f2f;
 }
 
@@ -658,4 +658,12 @@ body {
 
 .popup-main::-webkit-scrollbar-thumb:hover {
   background: #999;
+}
+
+.profile-timestamp {
+  font-size: 10px;
+  color: #adb5bd;
+  text-align: right;
+  margin-top: 8px;
+  font-weight: 500;
 }
